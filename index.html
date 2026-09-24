@@ -11,6 +11,7 @@
     <h1>面试进度管理</h1>
     <div class="actions">
       <button type="button" id="btn-add" class="btn primary">+ 新增候选人</button>
+      <button type="button" id="btn-templates" class="btn">流程模板</button>
       <button type="button" id="btn-export" class="btn">导出 CSV</button>
     </div>
   </header>
@@ -19,7 +20,8 @@
   <section class="stats">
     <div class="stats-row" id="stage-stats"></div>
     <div class="stats-row" id="rate-stats"></div>
-    <p class="stats-note">通过率 = Offer ÷（Offer + 淘汰），只统计已有结论的候选人</p>
+    <div class="stats-row" id="cycle-stats"></div>
+    <p class="stats-note">通过率 = Offer ÷（Offer + 淘汰），只统计已有结论的候选人；招聘周期 / 淘汰周期 = 从首次录入到进入 Offer / 淘汰的平均天数</p>
   </section>
 
   <!-- 进度看板 -->
@@ -54,13 +56,108 @@
       <label>当前阶段
         <select name="stage" id="stage-select"></select>
       </label>
+      <p class="form-hint" id="flow-hint"></p>
       <label>备注
         <textarea name="note" rows="3" maxlength="200"></textarea>
       </label>
+      <section id="eval-section" class="eval-section">
+        <h3>面试评价</h3>
+        <p class="form-hint">评价单独保存，填写后无需再点下方的"保存"。</p>
+        <div id="eval-list"></div>
+      </section>
       <div class="dialog-actions">
         <button type="button" id="btn-delete" class="btn danger">删除</button>
+        <button type="button" id="btn-invite" class="btn">生成面试邀请</button>
         <span class="spacer"></span>
         <button type="button" id="btn-cancel" class="btn">取消</button>
+        <button type="submit" class="btn primary">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 面试评价弹窗 -->
+  <dialog id="eval-dialog">
+    <form id="eval-form">
+      <h2 id="eval-title">面试评价</h2>
+      <label>面试官 *
+        <input name="interviewer" required maxlength="20">
+      </label>
+      <label>评分 *
+        <select name="score" required>
+          <option value="">请选择</option>
+          <option value="5">5 分 - 优秀</option>
+          <option value="4">4 分 - 良好</option>
+          <option value="3">3 分 - 一般</option>
+          <option value="2">2 分 - 较差</option>
+          <option value="1">1 分 - 不合格</option>
+        </select>
+      </label>
+      <label>评语
+        <textarea name="comment" rows="4" maxlength="300"></textarea>
+      </label>
+      <div class="dialog-actions">
+        <span class="spacer"></span>
+        <button type="button" id="btn-eval-cancel" class="btn">取消</button>
+        <button type="submit" class="btn primary">保存评价</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 面试邀请文案弹窗 -->
+  <dialog id="invite-dialog">
+    <form id="invite-form">
+      <h2 id="invite-title">生成面试邀请</h2>
+      <label>公司名称
+        <input name="company" maxlength="40" placeholder="留空则使用“我司”，填写后会自动记住">
+      </label>
+      <label>面试轮次
+        <select name="round" id="invite-round"></select>
+      </label>
+      <label>面试时间
+        <input name="time" maxlength="40" placeholder="如：9 月 28 日（周一）14:00">
+      </label>
+      <label>面试地点
+        <input name="location" maxlength="80" placeholder="公司地址，或线上会议链接">
+      </label>
+      <label>面试官
+        <input name="interviewer" maxlength="20">
+      </label>
+      <p class="form-hint">以上三项可以留空，文案中会保留【请填写…】空位，复制后再补充。</p>
+      <label>邀请文案（可直接修改）
+        <textarea name="text" id="invite-text" rows="14"></textarea>
+      </label>
+      <div class="dialog-actions">
+        <span class="spacer"></span>
+        <button type="button" id="btn-invite-close" class="btn">关闭</button>
+        <button type="button" id="btn-copy" class="btn primary">复制</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 岗位流程模板弹窗 -->
+  <dialog id="template-dialog">
+    <form id="template-form">
+      <h2>岗位流程模板</h2>
+      <p class="form-hint">勾选每个岗位需要的面试轮次。待约面、Offer、淘汰是固定阶段，所有岗位都有。</p>
+      <table class="template-table">
+        <thead>
+          <tr>
+            <th>岗位</th>
+            <th>一面</th>
+            <th>二面</th>
+            <th>终面</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="template-rows"></tbody>
+      </table>
+      <div class="template-add">
+        <input id="new-position" maxlength="20" placeholder="输入新岗位名称">
+        <button type="button" id="btn-add-position" class="btn">添加岗位</button>
+      </div>
+      <div class="dialog-actions">
+        <span class="spacer"></span>
+        <button type="button" id="btn-template-cancel" class="btn">取消</button>
         <button type="submit" class="btn primary">保存</button>
       </div>
     </form>

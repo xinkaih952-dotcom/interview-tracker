@@ -172,6 +172,41 @@ button {
   color: #6b7280;
 }
 
+.card-days {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.card-score {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #b45309;
+}
+
+/* 超时提醒：超过 7 天黄色，超过 14 天红色 */
+.card.overdue-warn {
+  background: #fef9c3;
+  border-color: #facc15;
+  border-left-color: var(--stage-color);
+}
+
+.card.overdue-warn .card-days {
+  color: #a16207;
+  font-weight: bold;
+}
+
+.card.overdue-alert {
+  background: #fee2e2;
+  border-color: #f87171;
+  border-left-color: var(--stage-color);
+}
+
+.card.overdue-alert .card-days {
+  color: #b91c1c;
+  font-weight: bold;
+}
+
 /* 每个阶段的颜色 */
 .stage-0 { --stage-color: #9ca3af; }
 .stage-1 { --stage-color: #60a5fa; }
@@ -256,8 +291,127 @@ dialog textarea {
   resize: vertical;
 }
 
+.form-hint {
+  margin: -4px 0 12px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* ---------- 面试评价 ---------- */
+.eval-section {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.eval-section h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.eval-item {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.eval-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: center;
+}
+
+.eval-stars {
+  color: #d97706;
+}
+
+.eval-interviewer {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.eval-actions {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.eval-comment {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #374151;
+  white-space: pre-wrap;
+}
+
+/* ---------- 面试邀请弹窗 ---------- */
+#invite-dialog {
+  width: min(480px, calc(100vw - 32px));
+}
+
+#invite-text {
+  line-height: 1.6;
+}
+
+.btn:disabled {
+  color: #9ca3af;
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+/* ---------- 流程模板弹窗 ---------- */
+#template-dialog {
+  width: min(520px, calc(100vw - 32px));
+}
+
+.template-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.template-table th,
+.template-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.template-table th:first-child,
+.template-table td:first-child {
+  text-align: left;
+}
+
+.template-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.template-table .btn-link:disabled {
+  color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.template-empty {
+  color: #9ca3af;
+}
+
+.template-add {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+dialog .template-add input {
+  flex: 1;
+  margin-top: 0;
+}
+
 .dialog-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 16px;
 }
