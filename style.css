@@ -1,0 +1,286 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-size: 14px;
+  color: #1f2937;
+  background: #f3f4f6;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ---------- 顶部栏 ---------- */
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  padding: 8px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  color: #1f2937;
+}
+
+.btn:hover {
+  background: #f9fafb;
+}
+
+.btn.primary {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+
+.btn.primary:hover {
+  background: #1d4ed8;
+}
+
+.btn.danger {
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+/* ---------- 统计条 ---------- */
+.stats {
+  padding: 16px 24px 0;
+}
+
+.stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.stat {
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+}
+
+.stat .label {
+  margin-right: 8px;
+  color: #6b7280;
+}
+
+.stat .value {
+  font-size: 16px;
+}
+
+.stat .detail {
+  margin-left: 4px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.stat.muted .value {
+  font-size: 14px;
+  font-weight: normal;
+  color: #9ca3af;
+}
+
+.stats-note {
+  margin: 0;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* ---------- 看板 ---------- */
+.board {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(150px, 1fr));
+  gap: 12px;
+  padding: 16px 24px;
+  overflow-x: auto;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 200px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #e5e7eb;
+  border-top: 4px solid var(--stage-color);
+}
+
+.column-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+}
+
+.column-header .count {
+  color: #6b7280;
+  font-weight: normal;
+}
+
+.column-empty {
+  padding: 16px 0;
+  text-align: center;
+  color: #9ca3af;
+}
+
+.card {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+  border-left: 3px solid var(--stage-color);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.card:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-name {
+  font-weight: bold;
+}
+
+.card-meta {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* 每个阶段的颜色 */
+.stage-0 { --stage-color: #9ca3af; }
+.stage-1 { --stage-color: #60a5fa; }
+.stage-2 { --stage-color: #3b82f6; }
+.stage-3 { --stage-color: #8b5cf6; }
+.stage-4 { --stage-color: #10b981; }
+.stage-5 { --stage-color: #ef4444; }
+
+.board-empty {
+  grid-column: 1 / -1;
+  padding: 60px 16px;
+  text-align: center;
+  color: #6b7280;
+}
+
+/* ---------- 底部 ---------- */
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 16px 24px 32px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.footer-actions {
+  display: flex;
+  gap: 16px;
+}
+
+.btn-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  color: #6b7280;
+  text-decoration: underline;
+}
+
+.btn-link.danger {
+  color: #dc2626;
+}
+
+/* ---------- 弹窗 ---------- */
+dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: 20px;
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+dialog h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+dialog label {
+  display: block;
+  margin-bottom: 12px;
+  color: #374151;
+}
+
+dialog input,
+dialog select,
+dialog textarea {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font: inherit;
+}
+
+dialog textarea {
+  resize: vertical;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* ---------- 手机屏幕：看板改为纵向排列 ---------- */
+@media (max-width: 700px) {
+  .topbar,
+  .stats,
+  .board,
+  .footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .board {
+    grid-template-columns: 1fr;
+  }
+
+  .column {
+    min-height: auto;
+  }
+}
