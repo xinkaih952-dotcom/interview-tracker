@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>面试进度管理</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>面试进度管理</h1>
+    <div class="actions">
+      <button type="button" id="btn-add" class="btn primary">+ 新增候选人</button>
+      <button type="button" id="btn-export" class="btn">导出 CSV</button>
+    </div>
+  </header>
+
+  <!-- 顶部统计条 -->
+  <section class="stats">
+    <div class="stats-row" id="stage-stats"></div>
+    <div class="stats-row" id="rate-stats"></div>
+    <p class="stats-note">通过率 = Offer ÷（Offer + 淘汰），只统计已有结论的候选人</p>
+  </section>
+
+  <!-- 进度看板 -->
+  <main class="board" id="board"></main>
+
+  <!-- 容易误点的操作放在底部 -->
+  <footer class="footer">
+    <span>数据仅保存在当前浏览器中</span>
+    <div class="footer-actions">
+      <button type="button" id="btn-sample" class="btn-link">载入示例数据</button>
+      <button type="button" id="btn-clear" class="btn-link danger">清空数据</button>
+    </div>
+  </footer>
+
+  <!-- 新增 / 编辑候选人弹窗 -->
+  <dialog id="dialog">
+    <form id="form">
+      <h2 id="dialog-title">新增候选人</h2>
+      <label>姓名 *
+        <input name="name" required maxlength="20">
+      </label>
+      <label>联系方式
+        <input name="contact" maxlength="40">
+      </label>
+      <label>应聘岗位 *
+        <input name="position" list="position-list" required maxlength="20" placeholder="可选择已有岗位或直接输入">
+      </label>
+      <datalist id="position-list"></datalist>
+      <label>来源渠道
+        <select name="source" id="source-select"></select>
+      </label>
+      <label>当前阶段
+        <select name="stage" id="stage-select"></select>
+      </label>
+      <label>备注
+        <textarea name="note" rows="3" maxlength="200"></textarea>
+      </label>
+      <div class="dialog-actions">
+        <button type="button" id="btn-delete" class="btn danger">删除</button>
+        <span class="spacer"></span>
+        <button type="button" id="btn-cancel" class="btn">取消</button>
+        <button type="submit" class="btn primary">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
