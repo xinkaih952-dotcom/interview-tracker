@@ -9,9 +9,12 @@
 <body>
   <header class="topbar">
     <h1>面试进度管理</h1>
+    <input type="search" id="search-input" class="search-input" placeholder="搜索姓名、岗位、来源、备注" aria-label="搜索候选人">
     <div class="actions">
       <button type="button" id="btn-add" class="btn primary">+ 新增候选人</button>
       <button type="button" id="btn-templates" class="btn">流程模板</button>
+      <button type="button" id="btn-import" class="btn">导入 CSV</button>
+      <input type="file" id="import-input" accept=".csv,text/csv" hidden>
       <button type="button" id="btn-export" class="btn">导出 CSV</button>
     </div>
   </header>
@@ -31,6 +34,9 @@
   <footer class="footer">
     <span>数据仅保存在当前浏览器中</span>
     <div class="footer-actions">
+      <button type="button" id="btn-backup" class="btn-link">备份为 JSON 文件</button>
+      <button type="button" id="btn-restore" class="btn-link">从 JSON 文件恢复</button>
+      <input type="file" id="restore-input" accept=".json,application/json" hidden>
       <button type="button" id="btn-sample" class="btn-link">载入示例数据</button>
       <button type="button" id="btn-clear" class="btn-link danger">清空数据</button>
     </div>

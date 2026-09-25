@@ -32,8 +32,24 @@ button {
   font-size: 20px;
 }
 
+.search-input {
+  flex: 1;
+  min-width: 180px;
+  max-width: 320px;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.search-input:focus {
+  outline: 2px solid #93c5fd;
+  border-color: #2563eb;
+}
+
 .actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -43,6 +59,7 @@ button {
   border-radius: 6px;
   background: #fff;
   color: #1f2937;
+  white-space: nowrap;
 }
 
 .btn:hover {
@@ -220,6 +237,21 @@ button {
   padding: 60px 16px;
   text-align: center;
   color: #6b7280;
+  background: #fff;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+}
+
+.board-empty-text {
+  margin: 0 0 16px;
+  font-size: 16px;
+}
+
+.board-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
 }
 
 /* ---------- 底部 ---------- */
@@ -235,7 +267,8 @@ button {
 
 .footer-actions {
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 8px 16px;
 }
 
 .btn-link {
@@ -432,6 +465,11 @@ dialog .template-add input {
 
   .board {
     grid-template-columns: 1fr;
+  }
+
+  .search-input {
+    flex-basis: 100%;
+    max-width: none;
   }
 
   .column {

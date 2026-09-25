@@ -209,20 +209,77 @@ function renderStats() {
   });
 }
 
+// ---------- 搜索 ----------
+// 只影响看板显示哪些卡片，统计条仍基于全部候选人
+let searchKeyword = '';
+
+function matchesSearch(c) {
+  if (!searchKeyword) return true;
+  return [c.name, c.position, c.source, c.note]
+    .some(value => (value || '').toLowerCase().includes(searchKeyword));
+}
+
+const searchInput = document.getElementById('search-input');
+searchInput.addEventListener('input', event => {
+  // 中文输入法拼写过程中先不筛选，选好字后再筛选
+  if (event.isComposing) return;
+  searchKeyword = searchInput.value.trim().toLowerCase();
+  renderBoard();
+});
+searchInput.addEventListener('compositionend', () => {
+  searchKeyword = searchInput.value.trim().toLowerCase();
+  renderBoard();
+});
+
 function renderBoard() {
   const board = document.getElementById('board');
   board.innerHTML = '';
 
+  // 空状态引导：没有候选人时显示，有数据后重新渲染自然消失
   if (candidates.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'board-empty';
-    empty.textContent = '还没有候选人。点击右上角"新增候选人"，或在页面底部"载入示例数据"。';
+
+    const text = document.createElement('p');
+    text.className = 'board-empty-text';
+    text.textContent = '当前没有候选人数据';
+
+    const actions = document.createElement('div');
+    actions.className = 'board-empty-actions';
+
+    const sampleBtn = document.createElement('button');
+    sampleBtn.type = 'button';
+    sampleBtn.className = 'btn';
+    sampleBtn.textContent = '载入示例数据';
+    // 复用底部按钮的逻辑（当前没有数据，不会弹出覆盖确认）
+    sampleBtn.addEventListener('click', () => document.getElementById('btn-sample').click());
+
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'btn primary';
+    addBtn.textContent = '新增候选人';
+    addBtn.addEventListener('click', () => openDialog(null));
+
+    actions.append(sampleBtn, addBtn);
+    empty.append(text, actions);
+    board.append(empty);
+    return;
+  }
+
+  const visible = candidates.filter(matchesSearch);
+  if (visible.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'board-empty';
+    const text = document.createElement('p');
+    text.className = 'board-empty-text';
+    text.textContent = '没有找到匹配的候选人';
+    empty.append(text);
     board.append(empty);
     return;
   }
 
   STAGES.forEach((stage, index) => {
-    const list = candidates.filter(c => c.stage === stage);
+    const list = visible.filter(c => c.stage === stage);
 
     const column = document.createElement('div');
     column.className = 'column stage-' + index;
@@ -840,6 +897,214 @@ function exportCsv() {
 
 document.getElementById('btn-export').addEventListener('click', exportCsv);
 
+// ========== 导入 CSV ==========
+const IMPORT_MAX_SIZE = 5 * 1024 * 1024;
+const IMPORT_MAX_REASONS = 10; // 结果提示里最多列出的跳过原因条数
+
+// 表头名称 → 字段；同一字段允许几种常见写法
+const IMPORT_COLUMNS = {
+  name: ['姓名'],
+  contact: ['联系方式', '电话', '手机'],
+  position: ['应聘岗位', '岗位'],
+  source: ['来源渠道', '来源'],
+  stage: ['当前阶段', '阶段'],
+  note: ['备注'],
+  createdDate: ['首次录入日期', '录入日期'],
+  stageDate: ['进入当前阶段日期', '进入阶段日期'],
+};
+const IMPORT_REQUIRED = { name: '姓名', position: '应聘岗位', stage: '当前阶段' };
+
+// 本工具导出的 CSV 里，候选人明细后面的其他部分，读到这里就停止
+const EXPORT_SECTION_TITLES = ['面试评价明细', '各阶段人数', '各岗位通过率', '招聘周期'];
+
+// 把 CSV 文本拆成二维数组，支持引号包裹、字段内的逗号、换行和 "" 转义
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"' && text[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        field += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ',') {
+      row.push(field);
+      field = '';
+    } else if (ch === '\r' || ch === '\n') {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+    } else {
+      field += ch;
+    }
+  }
+  if (field !== '' || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows;
+}
+
+// 去掉首尾空格，以及导出时为防止公式执行而加的单引号
+function cleanCell(value) {
+  const text = (value ?? '').trim();
+  return /^'[=+\-@]/.test(text) ? text.slice(1) : text;
+}
+
+// 解析 2026-09-01、2026/9/1、2026.9.1、2026年9月1日，返回当天 0 点的时间戳；格式错误或日期不存在时返回 null
+function parseDate(text) {
+  const m = text.match(/^(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})日?$/);
+  if (!m) return null;
+  const [year, month, day] = m.slice(1).map(Number);
+  const date = new Date(year, month - 1, day);
+  // 排除 2026-02-30 这类会被自动顺延的日期
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return date.getTime();
+}
+
+// Excel 在中文 Windows 上另存的 CSV 通常是 GBK 编码，UTF-8 解码失败时改用 GBK
+async function readCsvText(file) {
+  const buffer = await file.arrayBuffer();
+  let text;
+  try {
+    text = new TextDecoder('utf-8', { fatal: true }).decode(buffer);
+  } catch (e) {
+    text = new TextDecoder('gbk').decode(buffer);
+  }
+  return text.replace(/^﻿/, '');
+}
+
+// 校验并转换 CSV；返回 { imported, skipped }，文件整体不可用时抛出带中文说明的错误
+function importCandidates(text) {
+  const rows = parseCsv(text).map(row => row.map(cleanCell));
+
+  // 表头可能不在第一行（本工具导出的文件第一行是"候选人明细"）
+  const headerIndex = rows.findIndex(row => row.some(cell => IMPORT_COLUMNS.name.includes(cell)));
+  if (headerIndex === -1) {
+    throw new Error('没有找到表头。第一行应包含"姓名、应聘岗位、当前阶段"等列名。');
+  }
+  const header = rows[headerIndex];
+  const columnIndex = {};
+  Object.entries(IMPORT_COLUMNS).forEach(([key, names]) => {
+    const index = header.findIndex(cell => names.includes(cell));
+    if (index !== -1) columnIndex[key] = index;
+  });
+  const missing = Object.keys(IMPORT_REQUIRED).filter(key => columnIndex[key] === undefined);
+  if (missing.length > 0) {
+    throw new Error(`表头缺少必需的列：${missing.map(key => IMPORT_REQUIRED[key]).join('、')}。`);
+  }
+
+  const now = Date.now();
+  const imported = [];
+  const skipped = [];
+  // 已有候选人和本次文件里的候选人都参与去重
+  const seen = new Set(candidates.map(c => [c.name, c.contact, c.position].join('|')));
+
+  for (let i = headerIndex + 1; i < rows.length; i++) {
+    const row = rows[i];
+    const lineNo = i + 1; // 与 Excel 中的行号一致
+    if (row.every(cell => cell === '')) continue;
+    if (row.filter(cell => cell !== '').length === 1 && EXPORT_SECTION_TITLES.some(t => row.find(cell => cell).startsWith(t))) break;
+
+    const get = key => (columnIndex[key] === undefined ? '' : (row[columnIndex[key]] ?? ''));
+    const skip = reason => skipped.push(`第 ${lineNo} 行${reason}`);
+
+    const name = get('name');
+    const position = get('position');
+    const stage = get('stage');
+    if (!name) { skip('缺少姓名'); continue; }
+    if (!position) { skip('缺少应聘岗位'); continue; }
+    if (!stage) { skip('缺少当前阶段'); continue; }
+    if (!STAGES.includes(stage)) { skip(`阶段名称无效（${stage}）`); continue; }
+    if (!getStagesFor(position).includes(stage)) { skip(`阶段"${stage}"不在${position}的面试流程中`); continue; }
+
+    const createdText = get('createdDate');
+    const stageText = get('stageDate');
+    const createdDate = createdText ? parseDate(createdText) : null;
+    const stageDate = stageText ? parseDate(stageText) : null;
+    if (createdText && createdDate === null) { skip(`首次录入日期格式错误（${createdText}）`); continue; }
+    if (stageText && stageDate === null) { skip(`进入当前阶段日期格式错误（${stageText}）`); continue; }
+    if ((createdDate ?? 0) > now || (stageDate ?? 0) > now) { skip('日期晚于今天'); continue; }
+
+    // 没填日期时按导入时间计算，和手动新增候选人一致
+    const stageChangedAt = stageDate ?? now;
+    const createdAt = createdDate ?? stageChangedAt;
+    if (createdAt > stageChangedAt) { skip('进入当前阶段日期早于首次录入日期'); continue; }
+
+    const contact = get('contact');
+    const key = [name, contact, position].join('|');
+    if (seen.has(key)) { skip(`与已有候选人重复（${name}）`); continue; }
+    seen.add(key);
+
+    const source = get('source');
+    imported.push({
+      id: createId(),
+      name,
+      contact,
+      position,
+      source: SOURCES.includes(source) ? source : '其他',
+      stage,
+      note: get('note'),
+      createdAt,
+      stageChangedAt,
+      evaluations: {},
+    });
+  }
+  return { imported, skipped };
+}
+
+const importInput = document.getElementById('import-input');
+
+document.getElementById('btn-import').addEventListener('click', () => importInput.click());
+
+importInput.addEventListener('change', async () => {
+  const file = importInput.files[0];
+  // 清空选择，下次选同一个文件也能触发
+  importInput.value = '';
+  if (!file) return;
+
+  if (file.size > IMPORT_MAX_SIZE) {
+    alert('导入失败：文件过大（超过 5MB）。');
+    return;
+  }
+
+  let result;
+  try {
+    result = importCandidates(await readCsvText(file));
+  } catch (e) {
+    alert('导入失败：' + e.message + '\n\n当前数据没有任何改动。');
+    return;
+  }
+
+  const { imported, skipped } = result;
+  if (imported.length > 0) {
+    candidates.push(...imported);
+    saveData();
+    render();
+  }
+
+  let message = imported.length > 0 ? `成功导入 ${imported.length} 条` : '没有导入任何数据';
+  if (skipped.length > 0) {
+    const shown = skipped.slice(0, IMPORT_MAX_REASONS).join('、');
+    const more = skipped.length > IMPORT_MAX_REASONS ? ` 等，共 ${skipped.length} 条` : '';
+    message += `，跳过 ${skipped.length} 条（${shown}${more}）`;
+  } else if (imported.length === 0) {
+    message += '：文件中没有候选人数据行';
+  }
+  alert(message + '。');
+});
+
 // ========== 示例数据 / 清空 ==========
 // 全部为虚构人物，电话号码使用明显的假号码
 // days：载入时已在当前阶段停留的天数，用来演示超时提醒
@@ -949,6 +1214,160 @@ document.getElementById('btn-clear').addEventListener('click', () => {
   candidates = [];
   saveData();
   render();
+});
+
+// ========== 备份与恢复 ==========
+const BACKUP_APP = 'interview-tracker'; // 备份文件标识，用来识别是不是本工具导出的文件
+const BACKUP_VERSION = 1;
+const BACKUP_MAX_SIZE = 5 * 1024 * 1024; // 5MB，正常备份远小于这个大小
+
+// 面试评价保存在每个候选人的 evaluations 里，随候选人一起备份
+document.getElementById('btn-backup').addEventListener('click', () => {
+  if (candidates.length === 0 && Object.keys(templates).length === 0) {
+    alert('当前没有数据可备份。');
+    return;
+  }
+
+  const backup = {
+    app: BACKUP_APP,
+    version: BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    candidates,
+    templates,
+    company: loadCompany(),
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `面试数据备份_${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+const isTime = value => typeof value === 'number' && Number.isFinite(value) && value > 0;
+const toText = value => (typeof value === 'string' ? value : '');
+
+// 检查并整理备份内容；格式不对时抛出带中文说明的错误，由调用方提示给用户
+// 只保留认识的字段，缺少的可选字段补上默认值
+function parseBackup(text) {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch (e) {
+    throw new Error('文件内容不是有效的 JSON 格式。');
+  }
+  if (!data || typeof data !== 'object' || !Array.isArray(data.candidates)) {
+    throw new Error('文件中没有找到候选人数据，可能不是本工具导出的备份文件。');
+  }
+  if (data.app !== undefined && data.app !== BACKUP_APP) {
+    throw new Error('这不是本工具导出的备份文件。');
+  }
+
+  // 岗位流程模板
+  const rawTemplates = data.templates ?? {};
+  if (typeof rawTemplates !== 'object' || Array.isArray(rawTemplates)) {
+    throw new Error('流程模板数据格式不正确。');
+  }
+  const cleanTemplates = {};
+  Object.entries(rawTemplates).forEach(([position, rounds]) => {
+    if (!Array.isArray(rounds) || rounds.length === 0 || !rounds.every(r => ROUNDS.includes(r))) {
+      throw new Error(`岗位「${position}」的流程模板格式不正确。`);
+    }
+    cleanTemplates[position] = ROUNDS.filter(r => rounds.includes(r));
+  });
+
+  // 候选人（含面试评价）
+  const ids = new Set();
+  const now = Date.now();
+  const cleanCandidates = data.candidates.map((c, index) => {
+    const label = `第 ${index + 1} 位候选人`;
+    if (!c || typeof c !== 'object') throw new Error(`${label}的数据格式不正确。`);
+    if (typeof c.name !== 'string' || !c.name.trim()) throw new Error(`${label}缺少姓名。`);
+    if (typeof c.position !== 'string' || !c.position.trim()) throw new Error(`「${c.name}」缺少应聘岗位。`);
+    if (!STAGES.includes(c.stage)) throw new Error(`「${c.name}」的阶段"${c.stage}"无法识别。`);
+
+    const evaluations = {};
+    if (c.evaluations != null) {
+      if (typeof c.evaluations !== 'object' || Array.isArray(c.evaluations)) {
+        throw new Error(`「${c.name}」的面试评价格式不正确。`);
+      }
+      Object.entries(c.evaluations).forEach(([round, e]) => {
+        const valid = ROUNDS.includes(round) && e && typeof e.interviewer === 'string'
+          && Number.isInteger(e.score) && e.score >= 1 && e.score <= 5;
+        if (!valid) throw new Error(`「${c.name}」的${round}评价格式不正确。`);
+        evaluations[round] = { interviewer: e.interviewer, score: e.score, comment: toText(e.comment) };
+      });
+    }
+
+    // id 缺失或重复时重新生成，避免点击卡片时找错人
+    let id = typeof c.id === 'string' && c.id ? c.id : createId();
+    if (ids.has(id)) id = createId();
+    ids.add(id);
+
+    const clean = {
+      id,
+      name: c.name.trim(),
+      contact: toText(c.contact),
+      position: c.position.trim(),
+      source: toText(c.source) || '其他',
+      stage: c.stage,
+      note: toText(c.note),
+      stageChangedAt: isTime(c.stageChangedAt) ? c.stageChangedAt : now,
+      evaluations,
+    };
+    // 旧版本数据没有首次录入时间，保持缺失（不参与周期统计）
+    if (isTime(c.createdAt)) clean.createdAt = c.createdAt;
+    return clean;
+  });
+
+  return {
+    candidates: cleanCandidates,
+    templates: cleanTemplates,
+    company: typeof data.company === 'string' ? data.company : null,
+    exportedAt: data.exportedAt,
+  };
+}
+
+const restoreInput = document.getElementById('restore-input');
+
+document.getElementById('btn-restore').addEventListener('click', () => restoreInput.click());
+
+restoreInput.addEventListener('change', async () => {
+  const file = restoreInput.files[0];
+  // 清空选择，下次选同一个文件也能触发
+  restoreInput.value = '';
+  if (!file) return;
+
+  if (file.size > BACKUP_MAX_SIZE) {
+    alert('恢复失败：文件过大，不是有效的备份文件。');
+    return;
+  }
+
+  let backup;
+  try {
+    backup = parseBackup(await file.text());
+  } catch (e) {
+    alert('恢复失败：' + e.message + '\n\n当前数据没有任何改动。');
+    return;
+  }
+
+  const time = new Date(backup.exportedAt);
+  const timeText = isNaN(time) ? '未知' : time.toLocaleString('zh-CN');
+  const message = `将用备份文件覆盖当前全部数据：\n\n`
+    + `备份时间：${timeText}\n`
+    + `候选人：${backup.candidates.length} 位\n`
+    + `流程模板：${Object.keys(backup.templates).length} 个岗位\n\n`
+    + `当前数据将被替换且无法找回，是否继续？`;
+  if (!confirm(message)) return;
+
+  candidates = backup.candidates;
+  templates = backup.templates;
+  saveData();
+  saveTemplates();
+  if (backup.company !== null) saveCompany(backup.company);
+  render();
+  alert(`恢复成功，共 ${candidates.length} 位候选人。`);
 });
 
 // ========== 初始化 ==========
