@@ -148,6 +148,7 @@ function formatRate(rate) {
 // ========== 渲染 ==========
 function render() {
   renderStats();
+  renderPositionFilter(); // 要在看板之前：选中的岗位不存在时会先重置为"全部"
   renderBoard();
   renderPositionOptions();
 }
@@ -231,6 +232,50 @@ searchInput.addEventListener('compositionend', () => {
   renderBoard();
 });
 
+// ---------- 岗位筛选 ----------
+// 和搜索一样只影响看板，可与搜索同时生效
+let positionFilter = ''; // 空字符串表示"全部"
+
+function matchesPosition(c) {
+  return !positionFilter || c.position === positionFilter;
+}
+
+// 岗位按钮从现有候选人的岗位自动生成
+function renderPositionFilter() {
+  const box = document.getElementById('position-filter');
+  box.innerHTML = '';
+
+  const positions = [...new Set(candidates.map(c => c.position))];
+  // 选中的岗位已经没有候选人了（删除、清空、恢复备份等），回到"全部"
+  if (positionFilter && !positions.includes(positionFilter)) positionFilter = '';
+  box.hidden = positions.length === 0;
+
+  const options = [
+    { value: '', label: '全部', count: candidates.length },
+    ...positions.map(p => ({ value: p, label: p, count: candidates.filter(c => c.position === p).length })),
+  ];
+  options.forEach(({ value, label, count }) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chip';
+    const active = value === positionFilter;
+    if (active) btn.classList.add('active');
+    btn.setAttribute('aria-pressed', String(active));
+
+    const countEl = document.createElement('span');
+    countEl.className = 'chip-count';
+    countEl.textContent = count;
+    btn.append(label, countEl);
+
+    btn.addEventListener('click', () => {
+      positionFilter = value;
+      renderPositionFilter();
+      renderBoard();
+    });
+    box.append(btn);
+  });
+}
+
 function renderBoard() {
   const board = document.getElementById('board');
   board.innerHTML = '';
@@ -266,7 +311,7 @@ function renderBoard() {
     return;
   }
 
-  const visible = candidates.filter(matchesSearch);
+  const visible = candidates.filter(c => matchesPosition(c) && matchesSearch(c));
   if (visible.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'board-empty';

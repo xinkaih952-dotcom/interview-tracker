@@ -32,6 +32,50 @@ button {
   font-size: 20px;
 }
 
+/* ---------- 筛选栏 ---------- */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 16px 24px 0;
+}
+
+.position-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.position-filter[hidden] {
+  display: none;
+}
+
+.chip {
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  background: #fff;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.chip:hover {
+  border-color: #2563eb;
+}
+
+.chip.active {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+
+.chip-count {
+  margin-left: 6px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
 .search-input {
   flex: 1;
   min-width: 180px;
@@ -456,6 +500,7 @@ dialog .template-add input {
 /* ---------- 手机屏幕：看板改为纵向排列 ---------- */
 @media (max-width: 700px) {
   .topbar,
+  .toolbar,
   .stats,
   .board,
   .footer {
